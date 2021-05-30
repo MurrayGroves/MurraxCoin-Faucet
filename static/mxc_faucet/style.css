@@ -1,0 +1,52 @@
+
+/* Reset */
+@font-face {
+    font-family: '01-Digit';
+    src:url('01-Digit.ttf.woff') format('woff'),
+        url('01-Digit.ttf.svg#01-Digit') format('svg'),
+        url('01-Digit.ttf.eot'),
+        url('01-Digit.ttf.eot?#iefix') format('embedded-opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Box Model */
+
+	*, *:before, *:after {
+		-moz-box-sizing: border-box;
+		-webkit-box-sizing: border-box;
+		box-sizing: border-box;
+	}
+
+/* Basic */
+
+	.frame__title-wrap{
+		font-family: '01-Digit';
+		color: #b4a5a5;
+		text-align: center;
+		font-size: 36px;
+		position: fixed; /* or absolute */
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+	}
+
+	body{
+		background: url("some.png") repeat;
+		-webkit-animation: scrolling 20s linear infinite;
+		-moz-animation: scrolling 20s linear infinite;
+		-o-animation: scrolling 20s linear infinite;
+		animation: scrolling 20s linear infinite;
+	}
+
+	@-webkit-keyframes scrolling {
+	  from{
+		  background-position: 0 0;
+	  }
+	  to{
+		  background-position: 0 105%;
+	  }
+	}
+
+/* Wide */
+
