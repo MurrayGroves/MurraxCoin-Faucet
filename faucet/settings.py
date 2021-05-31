@@ -129,7 +129,7 @@ STATICFILES_DIRS = (os.path.join('static'),)
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 HCAPTCHA_SITEKEY = "712c4f8f-6ed2-46c0-a658-34c438626c95"
-HCAPTCHA_SECRET = open("private/hcaptcha_secret")
+HCAPTCHA_SECRET = open("private/hcaptcha_secret").read()
 
 HCAPTCHA_DEFAULT_CONFIG = {
     'onload': 'name_of_js_function',
