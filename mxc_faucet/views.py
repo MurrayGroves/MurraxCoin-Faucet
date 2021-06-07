@@ -9,6 +9,43 @@ from django import forms
 import os
 from ratelimit.decorators import ratelimit
 from ratelimit.core import get_usage
+import bfa
+import json
+from datetime import datetime
+from datetime import timedelta
+
+
+def checkAllowed(request):
+    try:
+        f = open("private/fingerprints.json")
+        data = f.read()
+        f.close()
+        data = json.loads(data)
+
+    except:
+        data = {}
+
+    fingerprint = bfa.fingerprint.get(request)
+    if fingerprint not in data:
+        allowed = True
+
+    else:
+        nextAllowed = datetime.strptime(data[fingerprint], "%y/%m/%d %H:%M:%S")
+        allowed = True if datetime.now() > nextAllowed else False
+
+    if allowed and request.method == "POST":
+        newAllowed = datetime.now() + timedelta(days=1)
+        nextAllowed = newAllowed.strftime("%y/%m/%d %H:%M:%S")
+
+        data[fingerprint] = nextAllowed
+        data = json.dumps(data)
+
+        f = open("private/fingerprints.json", "w+")
+        f.write(data)
+        f.close()
+
+    return allowed
+
 
 class Forms(forms.Form):
     hcaptcha = hCaptchaField()
@@ -18,13 +55,11 @@ class Forms(forms.Form):
 def index(request):
     # if this is a POST request we need to process the form data
     if request.method == 'POST':
-        limited = get_usage(request, key="ip", method=["GET", "POST"], fn=index, increment=True, rate="1/d")
-        if limited["count"] > limited["limit"]:
-            return HttpResponseRedirect("/mxc_faucet/claimed")
         # create a form instance and populate it with data from the request:
         form = Forms(request.POST)
         # check whether it's valid:
-        if form.is_valid():
+        validForm = form.is_valid()
+        if validForm and not checkAllowed(request):
             # process the data in form.cleaned_data as required
             # ...
             # redirect to a new URL:
@@ -32,12 +67,15 @@ def index(request):
             print(os.listdir())
             return HttpResponseRedirect('/mxc_faucet/claimed')
 
+        elif not validForm:
+            return HttpResponseRedirect("/mxc_faucet/invalidcaptcha")
+
+        else:
+            return HttpResponseRedirect("/mxc_faucet/forbidden")
+
+
     #  if a GET (or any other method) we'll create a blank form
     else:
-        limited = get_usage(request, key="ip", method=["GET", "POST"], increment=False, fn=index, rate="1/d")
-        if limited["count"] >= limited["limit"]:
-            return HttpResponseRedirect("/mxc_faucet/claimed")
-
         form = Forms()
 
     return render(request, 'name.html', {'form': form})
@@ -45,3 +83,10 @@ def index(request):
 
 def claimed(request):
     return render(request, "claimed.html")
+
+
+def forbidden(request):
+    return render(request, "forbidden.html")
+
+def invalidcaptcha(request):
+    return render(request, "invalidcaptcha.html")
