@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = open("private/django_secret").read()
+SECRET_KEY = open("private/django_secret").read().strip()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -130,7 +130,7 @@ STATICFILES_DIRS = (os.path.join('static'),)
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 HCAPTCHA_SITEKEY = "712c4f8f-6ed2-46c0-a658-34c438626c95"
-HCAPTCHA_SECRET = open("private/hcaptcha_secret").read()
+HCAPTCHA_SECRET = open("private/hcaptcha_secret").read().strip()
 
 HCAPTCHA_DEFAULT_CONFIG = {
     'onload': 'name_of_js_function',
