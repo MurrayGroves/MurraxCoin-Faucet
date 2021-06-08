@@ -59,7 +59,7 @@ def index(request):
         form = Forms(request.POST)
         # check whether it's valid:
         validForm = form.is_valid()
-        if validForm and not checkAllowed(request):
+        if validForm and checkAllowed(request):
             # process the data in form.cleaned_data as required
             # ...
             # redirect to a new URL:
