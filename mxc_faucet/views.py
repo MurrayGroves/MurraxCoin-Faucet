@@ -14,14 +14,19 @@ from datetime import timedelta
 
 # MurraxCoin imports
 import websockets
+import os
 from Crypto.PublicKey import ECC
 from Crypto.Hash import BLAKE2b
 from Crypto.Hash import SHA256
 from Crypto.Signature import DSS
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
+from nacl.signing import SigningKey
 
-privateFile = "private/private_key.pem"
+import base64
+import zlib
+
+privateFile = "private/genesis.pem"
 publicFile = "private/public_key.pem"
 handshakeFile = "private/handshake_key.pem"
 
@@ -43,31 +48,23 @@ handshakePublicKeyStr = handshakePublicKey.export_key()
 handshakeCipher = PKCS1_OAEP.new(handshakeKey)
 
 try:
-    f = open(privateFile, "rt")
-    privateKey = ECC.import_key(f.read())
+    f = open(privateFile, "rb")
+    privateKey = SigningKey(f.read())
     f.close()
 
 except:
-    privateKey = ECC.generate(curve="P-256")
-    f = open(privateFile, "wt")
-    f.write(privateKey.export_key(format="PEM"))
+    seed = os.urandom(32)
+    privateKey = SigningKey(seed)
+    f = open(privateFile, "wb+")
+    f.write(seed)
     f.close()
 
-try:
-    f = open(publicFile, "rt")
-    publicKey = ECC.import_key(f.read())
-    f.close()
+publicKey = privateKey.verify_key
 
-except:
-    publicKey = privateKey.public_key()
-    f = open(publicFile, "wt")
-    f.write(publicKey.export_key(format="PEM"))
-    f.close()
-
-publicKeyStr = publicKey.export_key(format="PEM", compress=True)
-publicKeyStr = publicKeyStr.replace("-----BEGIN PUBLIC KEY-----\n", "")
-publicKeyStr = publicKeyStr.replace("\n-----END PUBLIC KEY-----", "")
-publicKeyStr = publicKeyStr.replace("\n", " ")
+addressChecksum = zlib.adler32(publicKey.encode()).to_bytes(4, byteorder="big")
+addressChecksum = base64.b32encode(addressChecksum).decode("utf-8").replace("=", "").lower()
+address = base64.b32encode(publicKey.encode()).decode("utf-8").replace("=", "").lower()
+publicKeyStr = f"mxc_{address}{addressChecksum}"
 
 class websocketSecure:
     def __init__(self, url):
@@ -117,10 +114,8 @@ class websocketSecure:
 
 
 async def genSignature(data, privateKey):
-    data = json.dumps(data)
-    signer = DSS.new(privateKey, "deterministic-rfc6979")
-    signatureHash = SHA256.new(data.encode("utf-8"))
-    signature = signer.sign(signatureHash)
+    data = json.dumps(data).encode()
+    signature = privateKey.sign(data).signature
     signature = hex(int.from_bytes(signature, "little"))
 
     return signature
@@ -176,9 +171,7 @@ class Forms(forms.Form):
 
 
 async def sendMxc(address):
-    global websocket
-    if not websocket:
-        websocket = await websocketSecure.connect(uri)
+    websocket = await websocketSecure.connect(uri)
 
     await websocket.send(f'{{"type": "balance", "address": "{publicKeyStr}"}}')
     resp = await websocket.recv()
@@ -214,6 +207,8 @@ async def sendMxc(address):
     else:
         print("MXC send failed to initiate, please see error below:")
         print(resp)
+
+    await websocket.close()
 
 
 
