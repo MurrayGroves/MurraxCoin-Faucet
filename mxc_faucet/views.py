@@ -74,10 +74,10 @@ class websocketSecure:
         self.websocket = await websockets.connect(self.url)
         await self.websocket.send(handshakePublicKeyStr)
         handshakeData = await self.websocket.recv()
-        print("Data: " + handshakeData)
         handshakeData = json.loads(handshakeData)
 
-        sessionKey = bytes.fromhex(handshakeData["sessionKey"])
+        sessionKey = base64.b64decode(handshakeData["sessionKey"].encode('utf-8'))
+        #sessionKey = bytes.fromhex(handshakeData["sessionKey"])
         self.sessionKey = handshakeCipher.decrypt(sessionKey)
 
     @classmethod
@@ -94,6 +94,7 @@ class websocketSecure:
 
         raise TimeoutError
 
+
     async def recv(self):
         data = await self.websocket.recv()
         ciphertext, tag, nonce = data.split("|||")
@@ -107,7 +108,8 @@ class websocketSecure:
     async def send(self, plaintext):
         cipher = AES.new(self.sessionKey, AES.MODE_EAX)
         ciphertext, tag = cipher.encrypt_and_digest(plaintext.encode("utf-8"))
-        await self.websocket.send(ciphertext.hex() + "|||" + tag.hex() + "|||" + cipher.nonce.hex())
+        await self.websocket.send(base64.b64encode(ciphertext).decode("utf-8") + "|||" + base64.b64encode(tag).decode("utf-8") + "|||" + base64.b64encode(cipher.nonce).decode("utf-8"))
+
 
     async def close(self):
         await self.websocket.close()
