@@ -4,3 +4,4 @@ django-hcaptcha
 bfa
 websockets
 gunicorn
+pynacl
