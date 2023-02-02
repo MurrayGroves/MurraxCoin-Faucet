@@ -26,7 +26,7 @@ SECRET_KEY = open("private/django_secret").read().strip()
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["test.mydomain.com", "faucet.murraygrov.es"]
+ALLOWED_HOSTS = ["test.mydomain.com", "https://faucet.murraygrov.es"]
 
 
 # Application definition
