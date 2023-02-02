@@ -6,7 +6,7 @@ from django.http import HttpResponseRedirect
 from hcaptcha.fields import hCaptchaField
 from django import forms
 
-from ratelimit.core import get_usage
+
 
 import asyncio
 import json
@@ -135,15 +135,45 @@ uri = "ws://localhost:6969"
 websocket = None
 
 
+def get_ip_address(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
 def checkAllowed(request):
-    limited = get_usage(request, key="ip", method=["GET", "POST"], increment=False, fn=index, rate="1/d")
-    if limited["count"] >= limited["limit"]:
-        return False
+    try:
+        f = open("private/fingerprints.json")
+        data = f.read()
+        f.close()
+        data = json.loads(data)
 
-    elif request.method == "POST":
-        limited = get_usage(request, key="ip", method=["GET", "POST"], increment=True, fn=index, rate="1/d")
+    except:
+        data = {}
 
-    return True
+    fingerprint = get_ip_address(request)
+    if fingerprint not in data:
+        allowed = True
+
+    else:
+        nextAllowed = datetime.strptime(data[fingerprint], "%y/%m/%d %H:%M:%S")
+        allowed = True if datetime.now() > nextAllowed else False
+
+    if allowed and request.method == "POST":
+        newAllowed = datetime.now() + timedelta(days=1)
+        nextAllowed = newAllowed.strftime("%y/%m/%d %H:%M:%S")
+
+        data[fingerprint] = nextAllowed
+        data = json.dumps(data)
+
+        f = open("private/fingerprints.json", "w+")
+        f.write(data)
+        f.close()
+
+    return allowed
 
 websocket = False
 
