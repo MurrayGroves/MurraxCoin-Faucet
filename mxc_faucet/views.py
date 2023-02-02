@@ -6,8 +6,9 @@ from django.http import HttpResponseRedirect
 from hcaptcha.fields import hCaptchaField
 from django import forms
 
+from ratelimit.core import get_usage
+
 import asyncio
-import bfa  # Fingerprinting library
 import json
 from datetime import datetime
 from datetime import timedelta
@@ -135,35 +136,14 @@ websocket = None
 
 
 def checkAllowed(request):
-    try:
-        f = open("private/fingerprints.json")
-        data = f.read()
-        f.close()
-        data = json.loads(data)
+    limited = get_usage(request, key="ip", method=["GET", "POST"], increment=False, fn=index, rate="1/d")
+    if limited["count"] >= limited["limit"]:
+        return False
 
-    except:
-        data = {}
+    elif request.method == "POST":
+        limited = get_usage(request, key="ip", method=["GET", "POST"], increment=True, fn=index, rate="1/d")
 
-    fingerprint = bfa.fingerprint.get(request)
-    if fingerprint not in data:
-        allowed = True
-
-    else:
-        nextAllowed = datetime.strptime(data[fingerprint], "%y/%m/%d %H:%M:%S")
-        allowed = True if datetime.now() > nextAllowed else False
-
-    if allowed and request.method == "POST":
-        newAllowed = datetime.now() + timedelta(days=1)
-        nextAllowed = newAllowed.strftime("%y/%m/%d %H:%M:%S")
-
-        data[fingerprint] = nextAllowed
-        data = json.dumps(data)
-
-        f = open("private/fingerprints.json", "w+")
-        f.write(data)
-        f.close()
-
-    return allowed
+    return True
 
 websocket = False
 

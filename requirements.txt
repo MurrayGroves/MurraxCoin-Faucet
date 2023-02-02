@@ -1,7 +1,6 @@
 pycryptodome
 django
 django-hcaptcha
-bfa
 websockets
 gunicorn
 pynacl
