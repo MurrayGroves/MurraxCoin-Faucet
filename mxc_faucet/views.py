@@ -231,7 +231,10 @@ def index(request):
         form = Forms(request.POST)
         # check whether it's valid:
         validForm = form.is_valid()
-        if validForm and checkAllowed(request):
+        if not validForm:
+            return HttpResponseRedirect("/mxc_faucet/invalidcaptcha")
+
+        elif checkAllowed(request):
             # process the data in form.cleaned_data as required
             # ...
             # redirect to a new URL:
@@ -245,11 +248,7 @@ def index(request):
 
             loop.run_until_complete(sendMxc(address))
 
-
             return HttpResponseRedirect('/mxc_faucet/claimed')
-
-        elif not validForm:
-            return HttpResponseRedirect("/mxc_faucet/invalidcaptcha")
 
         else:
             return HttpResponseRedirect("/mxc_faucet/forbidden")
