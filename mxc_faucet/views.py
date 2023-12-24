@@ -131,7 +131,7 @@ async def ping():
     resp = await websocket.recv()
     return resp
 
-uri = "ws://localhost:6969"
+uri = "ws://murraxcoin.murraygrov.es:6969"
 websocket = None
 
 
